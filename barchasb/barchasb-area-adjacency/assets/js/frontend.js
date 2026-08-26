@@ -1,0 +1,54 @@
+(function () {
+    'use strict';
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const getVisible = (element, config) => window.innerWidth >= 1024 ? config.slidesDesktop : (window.innerWidth >= 640 ? config.slidesTablet : config.slidesMobile);
+    const init = (carousel) => {
+        let config = {};
+        try { config = JSON.parse(carousel.dataset.baaConfig || '{}'); } catch (error) { return; }
+        const viewport = carousel.querySelector('.baa-carousel__viewport');
+        const track = carousel.querySelector('.baa-carousel__track');
+        const slides = Array.from(track.children);
+        if (!slides.length) return;
+        let index = 0;
+        let timer = null;
+        let dragging = false;
+        let suppressClick = false;
+        let startX = 0;
+        let startTranslate = 0;
+        const count = () => Math.max(1, Math.min(slides.length, getVisible(carousel, config)));
+        const maxIndex = () => Math.max(0, slides.length - count());
+        const canLoop = () => config.loop && slides.length > count();
+        const update = (animate) => {
+            const visible = count();
+            const loop = canLoop();
+            const loopLength = maxIndex() + 1;
+            index = loop ? ((index % loopLength) + loopLength) % loopLength : Math.min(index, maxIndex());
+            track.style.setProperty('--baa-visible', String(visible));
+            track.style.gap = (Number(config.spaceBetween) || 0) + 'px';
+            const gapTotal = Math.max(0, visible - 1) * (Number(config.spaceBetween) || 0);
+            slides.forEach((slide) => { slide.style.width = 'calc((100% - ' + gapTotal + 'px) / ' + visible + ')'; slide.style.flexBasis = 'auto'; });
+            track.style.transform = 'translate3d(-' + (index * (100 / visible)) + '%, 0, 0)';
+            track.style.transition = animate ? 'transform 320ms ease' : 'none';
+            carousel.querySelectorAll('.baa-carousel__dot').forEach((dot, dotIndex) => dot.classList.toggle('is-active', dotIndex === Math.floor(index / visible)));
+            const disabled = !loop && slides.length <= visible;
+            const prev = carousel.querySelector('.baa-carousel__prev'); const next = carousel.querySelector('.baa-carousel__next');
+            if (prev) prev.disabled = disabled || (!loop && index === 0);
+            if (next) next.disabled = disabled || (!loop && index >= maxIndex());
+        };
+        const go = (direction) => { const step = 1; if (canLoop()) index += direction * step; else index = Math.max(0, Math.min(maxIndex(), index + direction * step)); update(true); };
+        const stop = () => { if (timer) { window.clearInterval(timer); timer = null; } };
+        const start = () => { stop(); if (!prefersReducedMotion && config.autoplay && slides.length > count()) timer = window.setInterval(() => go(1), Math.max(1000, config.autoplayDelay || 5000)); };
+        const renderDots = () => { const holder = carousel.querySelector('.baa-carousel__pagination'); if (!holder || !config.pagination) return; holder.innerHTML = ''; const total = Math.ceil(slides.length / count()); for (let i = 0; i < total; i += 1) { const dot = document.createElement('button'); dot.type = 'button'; dot.className = 'baa-carousel__dot'; dot.setAttribute('aria-label', 'نمایش صفحه ' + (i + 1)); dot.addEventListener('click', () => { index = i * count(); update(true); start(); }); holder.appendChild(dot); } };
+        const prev = carousel.querySelector('.baa-carousel__prev'); const next = carousel.querySelector('.baa-carousel__next');
+        if (prev) prev.addEventListener('click', () => { go(-1); start(); }); if (next) next.addEventListener('click', () => { go(1); start(); });
+        carousel.addEventListener('mouseenter', () => { if (config.pauseOnHover) stop(); }); carousel.addEventListener('mouseleave', () => { if (config.pauseOnHover) start(); });
+        carousel.addEventListener('keydown', (event) => { if (event.key === 'ArrowLeft') go(1); if (event.key === 'ArrowRight') go(-1); });
+        viewport.addEventListener('pointerdown', (event) => { dragging = true; suppressClick = false; startX = event.clientX; startTranslate = index; track.style.transition = 'none'; });
+        viewport.addEventListener('pointerup', (event) => { if (!dragging) return; dragging = false; const delta = event.clientX - startX; if (Math.abs(delta) > 45) { suppressClick = true; go(delta < 0 ? 1 : -1); window.setTimeout(() => { suppressClick = false; }, 50); } else { index = startTranslate; update(true); } start(); });
+        viewport.addEventListener('pointercancel', () => { dragging = false; update(true); });
+        carousel.addEventListener('click', (event) => { const link = event.target.closest('.baa-card__link'); if (! link) return; if (suppressClick) { event.preventDefault(); return; } if (! event.metaKey && ! event.ctrlKey && ! event.shiftKey && 1 !== event.button) { event.preventDefault(); window.location.href = link.href; } });
+        window.addEventListener('resize', () => { renderDots(); update(false); start(); });
+        renderDots(); update(false); start();
+    };
+    document.querySelectorAll('.baa-carousel').forEach(init);
+}());

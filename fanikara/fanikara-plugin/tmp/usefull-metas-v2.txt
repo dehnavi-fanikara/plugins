@@ -1,0 +1,71 @@
+
+CPT Fanikara - Post Meta Fields:
+fnk_dev_fanikar_area_term_id
+fnk_usr_cpt_switcher_direct_call
+fnk_usr_cpt_direct_call_phone_number
+fnk_usr_cpt_direct_call_phone_number_show
+fnk_usr_cpt_direct_call_phone_number_for_sms
+fnk_usr_cpt_work_status
+fnk_usr_cpt_rate
+fnk_usr_done_services
+fnk_usr_work_hours_start
+fnk_usr_work_hours_start_end
+fnk_usr_reg_date
+fnk_usr_mm_gallery
+fnk_user_erp_id
+
+------------------------------------------------------------------------------------------------------
+CPT Fanikara - JetForm Meta & Hidden Fields:
+fnk_customer_phone
+fanikar_wp_id
+fnk_user_erp_id
+service_erp_id
+service_wp_id
+service_wp_name
+city_erp_id
+city_wp_id
+city_wp_name
+date
+time
+date_time
+status
+referer_url
+------------------------------------------------------------------------------------------------------
+CPT Content (Money Page) Meta Fields:
+
+fnk_dev_area_term_id
+fnk_dev_area_term_name
+fnk_dev_area_term_slug
+fnk_dev_service_term_name
+fnk_dev_service_term_id
+fnk_content_sdfsr (Short Description For Search Results)
+fnk_content_section_faq_active
+fnk_content_section_suggested_fanikar_active
+fnk_content_section_suggested_fanikar_id
+fnk-faq
+
+------------------------------------------------------------------------------------------------------
+
+Tax/Term Area (City & Area):
+fnk_area_use_as_city
+fnk_area_erp_id
+fnk_area_city_erp_id
+fnk_area_city_content
+fnk_area_city_image
+
+------------------------------------------------------------------------------------------------------
+
+Tax/Term Service:
+fnk_service_erp_id
+service_meta_img
+service_meta_short_desc
+service_meta_terms_n_rules
+service_meta_sibling_titles
+
+------------------------------------------------------------------------------------------------------
+
+Tax/Term Features:
+fnk_features_color_bg
+fnk_features_color
+fnk_feature_tags_erp_id
+

@@ -1,0 +1,30 @@
+SELECT
+    p.ID,
+    COALESCE(CAST(pm_score.meta_value AS UNSIGNED), 0) as priority_score
+FROM {prefix}posts p
+-- اتصال ترم‌های area و service فنی‌کار
+INNER JOIN {prefix}term_relationships tr_area ON p.ID = tr_area.object_id
+INNER JOIN {prefix}term_taxonomy tt_area ON tr_area.term_taxonomy_id = tt_area.term_taxonomy_id
+INNER JOIN {prefix}term_relationships tr_service ON p.ID = tr_service.object_id
+INNER JOIN {prefix}term_taxonomy tt_service ON tr_service.term_taxonomy_id = tt_service.term_taxonomy_id
+-- خواندن متاهای مانی‌پیج (فقط یک بار!)
+INNER JOIN {prefix}postmeta pm_area ON pm_area.post_id = %current_id%
+    AND pm_area.meta_key = 'fnk_dev_area_term_id'
+INNER JOIN {prefix}postmeta pm_service ON pm_service.post_id = %current_id%
+    AND pm_service.meta_key = 'fnk_dev_service_term_id'
+-- خواندن امتیاز فنی‌کار برای آن خدمت خاص
+LEFT JOIN {prefix}postmeta pm_score ON p.ID = pm_score.post_id
+    AND pm_score.meta_key = CONCAT('fnk_dev_service_score_', pm_service.meta_value)
+-- ✅ شرط جدید: فیلتر کردن فنی‌کارهای مشغول (work_status = true)
+LEFT JOIN {prefix}postmeta pm_work_status ON p.ID = pm_work_status.post_id
+    AND pm_work_status.meta_key = 'fnk_usr_cpt_work_status'
+WHERE p.post_type = 'fanikar'
+AND p.post_status = 'publish'
+AND tt_area.taxonomy = 'area'
+AND tt_area.term_id = pm_area.meta_value
+AND tt_service.taxonomy = 'service'
+AND tt_service.term_id = pm_service.meta_value
+-- ✅ فقط فنی‌کارهایی که work_status برابر false هستند یا این متا را ندارند
+AND (pm_work_status.meta_value IS NULL OR pm_work_status.meta_value = 'false')
+ORDER BY
+    (COALESCE(CAST(pm_score.meta_value AS UNSIGNED), 0) * 0.7 + RAND() * 1000 * 0.3) DESC

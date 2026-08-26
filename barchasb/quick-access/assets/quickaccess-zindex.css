@@ -1,0 +1,146 @@
+.fk-quickaccess-wrap {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    position: relative;
+    left: auto;
+    right: auto;
+    transform: none;
+    direction: rtl;
+    box-sizing: border-box !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow-x: hidden !important;
+}
+
+.fk-quickaccess-wrap--sticky {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 999999999 !important;
+}
+
+.fk-quickaccess-wrap--sticky.is-stuck {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    z-index: 999999999 !important;
+}
+
+.fk-quickaccess-sticky-placeholder {
+    display: block;
+    width: 100%;
+    height: 0;
+}
+
+.fk-quickaccess-wrap .fk-quickaccess {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 10px 0 !important;
+    box-sizing: border-box !important;
+    direction: rtl;
+}
+
+/* When the wrapper is moved to body for fixed positioning, keep the cards
+ * at the exact width of their original container instead of stretching to
+ * the viewport or remaining stuck on one side. */
+.fk-quickaccess-wrap--sticky.is-stuck .fk-quickaccess {
+    width: min(100%, var(--fk-quickaccess-container-width, 100%)) !important;
+    max-width: var(--fk-quickaccess-container-width, 100%) !important;
+}
+
+/* Elementor may render a shortcode widget as a narrow flex column inside
+ * the real content container. Promote only the column that contains this
+ * component so the normal state uses the full parent container width even
+ * before JavaScript runs. */
+@supports selector(:has(*)) {
+    .e-con-inner:has(.fk-quickaccess-wrap) > .elementor-widget-shortcode {
+        flex: 0 0 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+.fk-quickaccess__grid {
+    display: grid !important;
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.fk-quickaccess__item {
+    width: 100%;
+    min-width: 0;
+    min-height: 76px;
+    margin: 0 !important;
+    padding: 10px 12px !important;
+    border: 1px solid var(--fk-normal-border, #e5e7eb);
+    border-radius: 17px;
+    background: var(--fk-normal-bg, #ffffff);
+    box-sizing: border-box !important;
+}
+
+.fk-quickaccess__item:hover,
+.fk-quickaccess__item:focus-visible {
+    border-color: var(--fk-hover-border, #cfeef4);
+    background: var(--fk-hover-bg, #f2fbfd);
+    transform: translateY(-2px);
+}
+
+.fk-quickaccess__item.is-active {
+    border-color: var(--fk-active-border, #bce8f0);
+    background: var(--fk-active-bg, #eaf9fc);
+}
+
+.fk-quickaccess__badge {
+    background: var(--fk-badge-bg, #eff6ff);
+}
+
+.fk-quickaccess__title,
+.fk-quickaccess__description {
+    min-width: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.fk-quickaccess__title {
+    font-size: .86rem;
+}
+
+.fk-quickaccess__description {
+    font-size: .7rem;
+}
+
+@media (max-width: 782px) {
+    .fk-quickaccess-wrap .fk-quickaccess,
+    .fk-quickaccess-wrap--sticky.is-stuck .fk-quickaccess {
+        padding: 8px 0 !important;
+    }
+
+    .fk-quickaccess__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .fk-quickaccess__item {
+        min-height: 68px;
+        padding: 8px !important;
+        gap: 9px;
+    }
+
+    .fk-quickaccess__title {
+        font-size: .78rem;
+    }
+
+    .fk-quickaccess__description {
+        font-size: .64rem;
+    }
+}

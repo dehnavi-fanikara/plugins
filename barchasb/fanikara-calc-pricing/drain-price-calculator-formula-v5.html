@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>محاسبه حدود قیمت لوله بازکنی</title>
+<style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --page-bg: #f5f7fa;
+      --card-bg: #ffffff;
+      --soft-bg: #f9fafb;
+      --text: #111827;
+      --label: #374151;
+      --muted: #6b7280;
+      --placeholder: #9ca3af;
+      --border: #e5e7eb;
+      --input-border: #d1d5db;
+      --primary: #111827;
+      --warning-bg: #fffbeb;
+      --warning-border: #fde68a;
+      --warning-text: #92400e;
+      --success-bg: #f0fdf4;
+      --success-border: #bbf7d0;
+      --success-text: #166534;
+      --error-bg: #fef2f2;
+      --error-border: #fecaca;
+      --error-text: #991b1b;
+      --danger: #b91c1c;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px 12px;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family: Tahoma, Arial, sans-serif;
+      line-height: 1.7;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .price-calculator {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 18px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.06);
+    }
+
+    .calculator-header {
+      margin-bottom: 20px;
+    }
+
+    .calculator-header h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      line-height: 1.5;
+    }
+
+    .calculator-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .calculator-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 22px;
+      padding: 5px;
+      background: var(--soft-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    .tab-button {
+      min-height: 48px;
+      padding: 8px 10px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab-button.active {
+      background: var(--card-bg);
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .tab-button:focus-visible,
+    .calculate-button:focus-visible {
+      outline: 3px solid rgba(17, 24, 39, 0.18);
+      outline-offset: 2px;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .field-group {
+      margin-bottom: 22px;
+    }
+
+    .field-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--label);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .field-description {
+      display: block;
+      margin: 0 0 9px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .required-mark {
+      color: var(--danger);
+    }
+
+    select,
+    input[type="text"] {
+      width: 100%;
+      min-height: 50px;
+      padding: 0 13px;
+      border: 1px solid var(--input-border);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+    }
+
+    select:focus,
+    input[type="text"]:focus {
+      border-color: #6b7280;
+      box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.1);
+    }
+
+    input::placeholder {
+      color: var(--placeholder);
+    }
+
+    input:disabled {
+      background: #f3f4f6;
+      color: var(--placeholder);
+      cursor: not-allowed;
+    }
+
+    .checkbox-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      min-height: 52px;
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .checkbox-card input[type="checkbox"] {
+      flex: 0 0 auto;
+      width: 19px;
+      height: 19px;
+      margin: 3px 0 0;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .checkbox-card-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .checkbox-card-title {
+      display: block;
+      color: var(--label);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .checkbox-card-description {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+      cursor: pointer;
+    }
+
+    .special-warning {
+      margin-bottom: 20px;
+      padding: 12px 13px;
+      border: 1px solid var(--warning-border);
+      border-radius: 12px;
+      background: var(--warning-bg);
+      color: var(--warning-text);
+      font-size: 13px;
+    }
+
+    .price-preview {
+      margin: 26px 0 12px;
+      padding: 17px 14px;
+      border: 1px solid var(--success-border);
+      border-radius: 14px;
+      background: var(--success-bg);
+      text-align: center;
+    }
+
+    .price-preview.is-error {
+      border-color: var(--error-border);
+      background: var(--error-bg);
+    }
+
+    .price-preview-label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--success-text);
+      font-size: 12px;
+    }
+
+    .price-preview.is-error .price-preview-label,
+    .price-preview.is-error .price-preview-value {
+      color: var(--error-text);
+    }
+
+    .price-preview-value {
+      display: block;
+      color: var(--success-text);
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.8;
+    }
+
+    .calculate-button {
+      width: 100%;
+      min-height: 54px;
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .calculate-button:hover {
+      opacity: 0.94;
+    }
+
+    .calculate-button:active {
+      transform: scale(0.99);
+    }
+
+    @media (min-width: 768px) {
+      body {
+        padding: 40px 20px;
+      }
+
+      .price-calculator {
+        padding: 28px;
+      }
+
+      .calculator-header h1 {
+        font-size: 26px;
+      }
+
+      .desktop-fields-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 16px;
+      }
+
+      .field-group.full-width {
+        grid-column: 1 / -1;
+      }
+    }
+  
+.special-toggle{margin-top:6px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fff}.special-toggle-button{width:100%;min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border:0;background:var(--soft-bg);color:var(--text);font-size:15px;font-weight:800;text-align:right;cursor:pointer}.special-toggle-button:hover{background:#f3f4f6}.special-toggle-icon{flex:0 0 auto;font-size:20px;line-height:1;transition:transform .2s ease}.special-toggle-button[aria-expanded="true"] .special-toggle-icon{transform:rotate(180deg)}.special-toggle-content{padding:18px 14px 2px;border-top:1px solid var(--border);background:#fff}.special-toggle-content[hidden]{display:none}@media (min-width:768px){.special-toggle-content{padding:22px 20px 4px}}</style>
+</head>
+<body>
+<main>
+<section aria-labelledby="calculator-title" class="price-calculator" id="drain-price-calculator">
+<header class="calculator-header">
+<h1 id="calculator-title">محاسبه حدود قیمت لوله بازکنی</h1>
+<p>مقادیر اولیه فرم بر اساس رایج ترین حالت های پایه در نظر گرفته شده اند.</p>
+</header>
+<form id="priceForm" novalidate="">
+<div class="tab-panel active" id="common-panel">
+<div class="desktop-fields-grid">
+<div class="field-group">
+<label class="field-label" for="city">
+                شهر
+                <span aria-hidden="true" class="required-mark">*</span>
+</label>
+<span class="field-description" id="city-description">
+                لطفاً یکی از گزینه‌های شهر خود را انتخاب کنید؛ مثلاً تهران.
+              </span>
+<select aria-describedby="city-description" id="city" name="city" required="">
+<option selected="selected" value="tehran">تهران</option>
+<option value="karaj">کرج</option>
+<option value="mashhad">مشهد</option>
+<option value="isfahan">اصفهان</option>
+<option value="qom">قم</option>
+<option value="tabriz">تبریز</option>
+<option value="other">سایر</option>
+</select>
+</div>
+<div class="field-group">
+<label class="field-label" for="service_type">
+                نوع خدمت
+                <span aria-hidden="true" class="required-mark">*</span>
+</label>
+<span class="field-description" id="service-type-description">
+                لطفاً خدمت موردنظر را انتخاب کنید؛ مثلاً لوله بازکنی توالت ایرانی.
+              </span>
+<select aria-describedby="service-type-description" id="service_type" name="service_type" required="">
+<option selected="selected" value="iranian_toilet">لوله بازکنی توالت ایرانی</option>
+<option value="western_toilet">لوله بازکنی توالت فرنگی</option>
+<option value="bathroom_floor_drain">لوله بازکنی کفشور حمام</option>
+<option value="kitchen_floor_drain">لوله بازکنی کفشور آشپزخانه</option>
+<option value="roof">لوله بازکنی پشت بام</option>
+<option value="kitchen_sink">لوله بازکنی سینک آشپزخانه</option>
+<option value="construction_excavation">بنایی و کنده‌کاری</option>
+<option value="other">سایر</option>
+</select>
+</div>
+<div class="field-group">
+<label class="field-label" for="spring_length">متراژ فنر</label>
+<span class="field-description" id="spring-length-description">متراژ فنر را فقط به‌صورت عدد وارد کنید؛ مثلاً ۲ متر.</span>
+<input aria-describedby="spring-length-description" autocomplete="off" data-numeric-input="" id="spring_length" inputmode="numeric" name="spring_length" type="text" value="2"/>
+</div><div class="field-group"><label class="field-label" for="spring_diameter">قطر فنر</label><span class="field-description" id="spring-diameter-description">بر اساس اندازه های استاندارد انتخاب کنید</span><select aria-describedby="spring-diameter-description" id="spring_diameter" name="spring_diameter"><option selected="selected" value="12">12</option><option value="14">14</option><option value="16">16</option><option value="18">18</option><option value="22">22</option></select></div>
+<div class="field-group">
+<label class="field-label" for="service_duration">
+                مدت زمان ارائه خدمات بر اساس دقیقه
+              </label>
+<span class="field-description" id="service-duration-description">
+                مدت زمان را فقط به‌صورت عدد وارد کنید؛ مثلاً ۳۰.
+              </span>
+<input aria-describedby="service-duration-description" autocomplete="off" data-numeric-input="" id="service_duration" inputmode="numeric" name="service_duration" type="text" value="20"/>
+</div><div class="field-group"><label class="field-label" for="problem_cause">علت مشکل</label><span class="field-description" id="problem-cause-description">تنها در صورتی که علت بروز مشکل را می‌دانید، انتخاب کنید.</span><select aria-describedby="problem-cause-description" id="problem_cause" name="problem_cause"><option selected="selected" value="fecal_blockage">گرفتگی با مدفوع</option><option value="soft_spongy_objects">گرفتگی به دلیل افتادن اجسام غیر سخت</option><option value="valuable_object_retrieval">درآوردن اجسام ارزشمند از چاه (مثل طلا، موبایل، اسناد و مدارک و …)</option><option value="severe_sediment">رسوب گرفتگی شدید</option><option value="hard_object">افتادن اجسام سخت در لوله</option><option value="construction_materials">ریختن مصالح ساختمانی مثل قیر و سیمان و …</option></select></div>
+<div class="field-group">
+<label class="field-label" for="service_time">
+                زمان ارائه خدمات
+              </label>
+<span class="field-description" id="service-time-description">بر اساس تقویم رسمی</span><select aria-describedby="service-time-description" id="service_time" name="service_time">
+<option selected="selected" value="1">
+                  روزهای عادی - ساعات عادی
+                </option>
+<option value="1.4">
+                  روز عادی - سرویس‌دهی شبانه
+                </option>
+<option value="1.3">
+                  روز تعطیل - ساعات عادی
+                </option>
+<option value="1.82">
+                  روز تعطیل - سرویس‌دهی شبانه
+                </option>
+</select>
+</div>
+<div class="field-group">
+<label class="field-label" for="technician_count">
+                تعداد فنی‌کار
+              </label>
+<span class="field-description" id="technician-count-description">
+                تعداد فنی‌کار را فقط به‌صورت عدد وارد کنید؛ مثلاً ۲.
+              </span>
+<input aria-describedby="technician-count-description" autocomplete="off" data-numeric-input="" id="technician_count" inputmode="numeric" name="technician_count" type="text" value="1"/>
+</div>
+<div class="field-group full-width">
+<div class="checkbox-card">
+<input checked="" id="valid_invoice" name="valid_invoice" type="checkbox" value="1"/>
+<div class="checkbox-card-content">
+<label class="checkbox-card-title" for="valid_invoice">
+                    ارائه فاکتور معتبر
+                  </label>
+<label class="checkbox-card-description" for="valid_invoice">
+                    این مورد رایگان است و فنی‌کارها موظف به ارائه فاکتور با نام،
+                    شماره و امضای خود هستند.
+                  </label>
+</div>
+</div>
+</div>
+</div>
+</div><section class="special-toggle"><button aria-controls="special-toggle-content" aria-expanded="false" class="special-toggle-button" id="special-toggle-button" type="button"><span>موارد خاص</span><span aria-hidden="true" class="special-toggle-icon">⌄</span></button><div class="special-toggle-content" hidden="" id="special-toggle-content">
+<div class="special-warning">
+            این موارد فقط در بعضی خدمات و شرایط خاص روی هزینه نهایی اثر می‌گذارند.
+          </div>
+<div class="desktop-fields-grid">
+<div class="field-group full-width">
+<div class="checkbox-card">
+<input id="official_invoice_with_vat" name="official_invoice_with_vat" type="checkbox" value="1"/>
+<div class="checkbox-card-content">
+<label class="checkbox-card-title" for="official_invoice_with_vat">
+                    ارائه فاکتور شرکتی رسمی با مهر و ارزش افزوده
+                  </label>
+<label class="checkbox-card-description" for="official_invoice_with_vat">
+                    در صورت نیاز به فاکتور شرکتی، حتماً قبل از اعزام سرویس‌کار
+                    به ما اطلاع دهید. (تلفنی)
+                  </label>
+</div>
+</div>
+</div>
+<div class="field-group full-width">
+<div class="checkbox-card">
+<input id="out_of_city" name="out_of_city" type="checkbox" value="1"/>
+<div class="checkbox-card-content">
+<label class="checkbox-card-title" for="out_of_city">
+                    خارج از شهر
+                  </label>
+<label class="checkbox-card-description" for="out_of_city">
+                    فقط اگر خارج از شهر هستید، این گزینه را فعال کنید.
+                  </label>
+</div>
+</div>
+</div>
+<div class="field-group">
+<label class="field-label" for="transportation_cost">هزینه ایاب و ذهاب (برای خارج از شهر)</label>
+<span class="field-description" id="transportation-cost-description">
+                هزینه ایاب و ذهاب را فقط به‌صورت عدد وارد کنید؛ مثلاً ۳۰۰,۰۰۰.
+              </span>
+<input aria-describedby="transportation-cost-description" autocomplete="off" data-money-input="" data-numeric-input="" disabled="" id="transportation_cost" inputmode="numeric" name="transportation_cost" placeholder="مبلغ به تومان" type="text"/>
+</div>
+<div class="field-group">
+<label class="field-label" for="tip">انعام</label>
+<span class="field-description" id="tip-description">
+                مبلغ انعام را فقط به‌صورت عدد وارد کنید؛ مثلاً ۳۰۰,۰۰۰.
+              </span>
+<input aria-describedby="tip-description" autocomplete="off" data-money-input="" data-numeric-input="" id="tip" inputmode="numeric" name="tip" placeholder="مبلغ به تومان" type="text"/>
+</div>
+<div class="field-group">
+<label class="field-label" for="equipment_used">
+                تجهیزات استفاده‌شده
+              </label>
+<span class="field-description" id="equipment-used-description">
+                تجهیزات استفاده‌شده را انتخاب کنید؛ مثلاً فنر معمولی.
+              </span>
+<select aria-describedby="equipment-used-description" id="equipment_used" name="equipment_used">
+<option selected="" value="normal_spring">فنر معمولی</option>
+<option value="high_pressure_spring">دستگاه فنر برقی فشار قوی</option>
+<option value="air_compression_pump">پمپ تراکم هوا معمولی</option><option value="advanced_air_compression_pump">پمپ تراکم هوا پیشرفته</option>
+<option value="waterjet">واترجت</option>
+</select>
+</div>
+<div class="field-group">
+<label class="field-label" for="equipment_rental_cost">
+                مبلغ اجاره تجهیزات
+              </label>
+<span class="field-description" id="equipment-rental-description">
+                هزینه اجاره تجهیزات را فقط به‌صورت عدد وارد کنید؛ مثلاً ۴۰۰,۰۰۰.
+              </span>
+<input aria-describedby="equipment-rental-description" autocomplete="off" data-money-input="" data-numeric-input="" id="equipment_rental_cost" inputmode="numeric" name="equipment_rental_cost" placeholder="مبلغ به تومان" type="text"/>
+</div>
+<div class="field-group">
+<label class="field-label" for="equipment_transport_cost">
+                کرایه حمل تجهیزات
+              </label>
+<span class="field-description" id="equipment-transport-description">
+                کرایه حمل تجهیزات را فقط به‌صورت عدد وارد کنید؛ مثلاً ۴۰۰,۰۰۰.
+              </span>
+<input aria-describedby="equipment-transport-description" autocomplete="off" data-money-input="" data-numeric-input="" id="equipment_transport_cost" inputmode="numeric" name="equipment_transport_cost" placeholder="مبلغ به تومان" type="text"/>
+</div>
+</div>
+</div></section>
+<div aria-atomic="true" aria-live="polite" class="price-preview" id="pricePreview">
+<span class="price-preview-label">هزینه تخمینی</span>
+<strong class="price-preview-value" id="estimatedPrice">
+            حدود a تا b تومان
+          </strong>
+</div>
+<button class="calculate-button" type="submit">
+          محاسبه حدود قیمت
+        </button>
+</form>
+</section>
+</main>
+<script>
+(() => {
+  "use strict";
+
+  // تعریف متغیرهای اولیه
+  const masonry_cost =
+    "هزینه بنایی به عوامل زیادی بستگی دارد و با توجه به اجرت استاد بنا، کارگر، مصالح و ... حدودا بین 17 تا 80 میلیون تومان است.";
+  const negotiable_price =
+    "در شرایط بالا، هزینه کار توافقی است.";
+  const spring_cost_per_meter = 100000;
+  const service_cost_per_minute_per_person = 10000;
+
+  const weekday_normal_hours_multiplier = 1;
+  const weekday_night_service_multiplier = 1.4;
+  const holiday_normal_hours_multiplier = 1.3;
+  const Holiday_night_service_multiplier = 1.82;
+
+  const vat_rate = 10;
+
+  const form = document.getElementById("priceForm");
+  const estimatedPrice = document.getElementById("estimatedPrice");
+  const pricePreview = document.getElementById("pricePreview");
+  const outOfCityCheckbox = document.getElementById("out_of_city");
+  const transportationCostField = document.getElementById("transportation_cost");
+  const specialToggleButton = document.getElementById("special-toggle-button");
+  const specialToggleContent = document.getElementById("special-toggle-content");
+  const serviceTimeField = document.getElementById("service_time");
+
+  const digitMap = {
+    "۰":"0","۱":"1","۲":"2","۳":"3","۴":"4","۵":"5","۶":"6","۷":"7","۸":"8","۹":"9",
+    "٠":"0","١":"1","٢":"2","٣":"3","٤":"4","٥":"5","٦":"6","٧":"7","٨":"8","٩":"9"
+  };
+
+  function setSpecialToggle(open) {
+    if (!specialToggleButton || !specialToggleContent) return;
+    specialToggleButton.setAttribute("aria-expanded", open ? "true" : "false");
+    specialToggleContent.hidden = !open;
+  }
+
+  if (specialToggleButton) {
+    specialToggleButton.addEventListener("click", () => {
+      const isOpen = specialToggleButton.getAttribute("aria-expanded") === "true";
+      setSpecialToggle(!isOpen);
+    });
+  }
+
+  function updateTransportationField() {
+    const isOutOfCity = outOfCityCheckbox.checked;
+    transportationCostField.disabled = !isOutOfCity;
+    if (!isOutOfCity) transportationCostField.value = "";
+  }
+
+  function normalizeDigits(value) {
+    return String(value ?? "")
+      .split("")
+      .map(ch => digitMap[ch] ?? ch)
+      .join("");
+  }
+
+  function getRawNumber(value) {
+    const cleaned = normalizeDigits(value).replace(/[^\d.]/g, "");
+    const num = Number(cleaned);
+    return Number.isFinite(num) ? num : 0;
+  }
+
+  function formatPrice(value) {
+    return Math.round(value).toLocaleString("en-US");
+  }
+
+  function formatNumericInput(input) {
+    const rawValue = getRawNumber(input.value);
+    if (input.hasAttribute("data-money-input")) {
+      input.value = rawValue ? Math.round(rawValue).toLocaleString("en-US") : "";
+    } else {
+      input.value = rawValue ? String(rawValue) : "";
+    }
+  }
+
+  function getFormValues() {
+    return {
+      serviceType: document.getElementById("service_type").value,
+      springLength: getRawNumber(document.getElementById("spring_length").value),
+      springDiameter: getRawNumber(document.getElementById("spring_diameter").value),
+      serviceDuration: getRawNumber(document.getElementById("service_duration").value),
+      serviceTime: Number(serviceTimeField.value || 1),
+      technicianCount: getRawNumber(document.getElementById("technician_count").value),
+      officialInvoiceWithVat: document.getElementById("official_invoice_with_vat").checked,
+      equipmentUsed: document.getElementById("equipment_used").value,
+      problemCause: document.getElementById("problem_cause").value,
+      transportationCost: outOfCityCheckbox.checked
+        ? getRawNumber(transportationCostField.value)
+        : 0,
+      tip: getRawNumber(document.getElementById("tip").value),
+      equipmentRentalCost: getRawNumber(document.getElementById("equipment_rental_cost").value),
+      equipmentTransportCost: getRawNumber(document.getElementById("equipment_transport_cost").value)
+    };
+  }
+
+  function calculateFinalPrice(values) {
+    if (values.serviceType === "construction_excavation") {
+      return masonry_cost;
+    }
+
+    const isNegotiable =
+      values.equipmentUsed !== "normal_spring" ||
+      values.springLength > 5 ||
+      values.serviceType === "other" ||
+      (
+        values.problemCause !== "fecal_blockage" &&
+        values.problemCause !== "soft_spongy_objects"
+      );
+
+    if (isNegotiable) {
+      return negotiable_price;
+    }
+
+    let tax_multiplier = 1;
+
+    if (values.officialInvoiceWithVat === true) {
+      tax_multiplier *= 1 + (vat_rate / 100);
+    }
+
+    let final_price_min =
+      ((values.springDiameter - 2) / 10) *
+      spring_cost_per_meter *
+      values.springLength;
+
+    final_price_min +=
+      service_cost_per_minute_per_person *
+      values.serviceDuration;
+
+    final_price_min *= values.serviceTime;
+    final_price_min *= values.technicianCount;
+
+    final_price_min += values.transportationCost;
+    final_price_min += values.equipmentRentalCost;
+    final_price_min += values.equipmentTransportCost;
+
+    final_price_min *= tax_multiplier;
+    final_price_min += values.tip;
+
+    const final_price_max = final_price_min * 1.25;
+
+    return (
+      "حدودا بین " +
+      formatPrice(final_price_min) +
+      " تا " +
+      formatPrice(final_price_max) +
+      " تومان"
+    );
+  }
+
+  function recalculatePrice() {
+    estimatedPrice.textContent = calculateFinalPrice(getFormValues());
+    pricePreview.classList.remove("is-error");
+  }
+
+  outOfCityCheckbox.addEventListener("change", () => {
+    updateTransportationField();
+    recalculatePrice();
+  });
+
+  form.querySelectorAll("select, input").forEach(field => {
+    const eventName =
+      field.tagName === "SELECT" || field.type === "checkbox"
+        ? "change"
+        : "input";
+
+    field.addEventListener(eventName, () => {
+      if (field.matches("[data-numeric-input]")) {
+        formatNumericInput(field);
+      }
+      recalculatePrice();
+    });
+  });
+
+  form.addEventListener("submit", event => {
+    event.preventDefault();
+    recalculatePrice();
+  });
+
+  const serviceTimeValues = [
+    weekday_normal_hours_multiplier,
+    weekday_night_service_multiplier,
+    holiday_normal_hours_multiplier,
+    Holiday_night_service_multiplier
+  ];
+
+  const serviceTimeOptions = Array.from(serviceTimeField.options)
+    .filter(option => option.value !== "");
+
+  serviceTimeOptions.forEach((option, index) => {
+    if (serviceTimeValues[index] !== undefined) {
+      option.value = String(serviceTimeValues[index]);
+    }
+  });
+
+  if (!serviceTimeField.value && serviceTimeOptions.length) {
+    serviceTimeOptions[0].selected = true;
+  }
+
+  setSpecialToggle(false);
+  updateTransportationField();
+  recalculatePrice();
+})();
+</script>
+</body>
+</html>

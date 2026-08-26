@@ -1,0 +1,17 @@
+.baa-metabox { max-width: 100%; }
+.baa-search-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 14px 0 8px; }
+.baa-search-row .baa-search-input { min-width: 280px; flex: 1; }
+.baa-search-status { min-height: 24px; color: #646970; }
+.baa-search-results { display: grid; gap: 5px; max-height: 280px; overflow: auto; margin-bottom: 16px; }
+.baa-result-item, .baa-selected-item { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #dcdcde; background: #fff; }
+.baa-result-item small, .baa-item-name small { display: block; color: #646970; font-size: 11px; }
+.baa-result-thumb img, .baa-item-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+.baa-result-item .button { margin-right: auto; }
+.baa-selected-list { display: grid; gap: 6px; padding-right: 0; }
+.baa-selected-item { cursor: grab; list-style-position: inside; }
+.baa-selected-item .baa-item-name { flex: 1; }
+.baa-drag-handle { color: #8c8f94; font-size: 20px; cursor: grab; }
+.baa-selected-item.baa-dragging { opacity: .45; }
+.baa-item-invalid { color: #b32d2e; }
+.baa-settings-page { direction: rtl; }
+.baa-settings-page .nav-tab { margin-right: 0; margin-left: 4px; }
