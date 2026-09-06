@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Fanikara Live Status
  * Description: پلاگین مدیریت موقعیت زنده فنی‌کارها و نقشه تعاملی لوله بازکنی برای ارتقای سئو و تعامل کاربر.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Javad Absalan from FaniKara.com
  * Text Domain: fanikara-live-status
  */
@@ -28,6 +28,7 @@ class FaniKara_Live_Status {
         register_activation_hook(__FILE__, array($this, 'create_db_tables'));
         register_deactivation_hook(__FILE__, array($this, 'plugin_deactivate'));
         
+        add_action('plugins_loaded', array($this, 'maybe_upgrade_database'));
         add_action('admin_menu', array($this, 'register_admin_menu'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
         add_action('wp_enqueue_scripts', array($this, 'register_frontend_assets'));
@@ -62,6 +63,7 @@ class FaniKara_Live_Status {
             lat varchar(50) NOT NULL,
             lng varchar(50) NOT NULL,
             satisfaction int(3) NOT NULL,
+            satisfaction_count bigint(20) unsigned NOT NULL DEFAULT 0,
             experience varchar(50) NOT NULL,
             clearance_img varchar(255) DEFAULT '',
             profile_img varchar(255) DEFAULT '',
@@ -72,6 +74,71 @@ class FaniKara_Live_Status {
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_maps);
         dbDelta($sql_techs);
+        update_option('fls_db_version', '1.2.0');
+    }
+
+    public function maybe_upgrade_database() {
+        if (get_option('fls_db_version') !== '1.2.0') {
+            $this->create_db_tables();
+        }
+    }
+
+    // Convert the current Gregorian date to a Solar Hijri year, including Nowruz.
+    private function current_solar_year() {
+        $date = current_datetime();
+        $gy = (int) $date->format('Y');
+        $gm = (int) $date->format('n');
+        $gd = (int) $date->format('j');
+        $month_days = array(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334);
+        $gy2 = $gm > 2 ? $gy + 1 : $gy;
+        $days = 355666 + 365 * $gy + intdiv($gy2 + 3, 4)
+            - intdiv($gy2 + 99, 100) + intdiv($gy2 + 399, 400)
+            + $gd + $month_days[$gm - 1];
+        $jy = -1595 + 33 * intdiv($days, 12053);
+        $days %= 12053;
+        $jy += 4 * intdiv($days, 1461);
+        $days %= 1461;
+        if ($days > 365) {
+            $jy += intdiv($days - 1, 365);
+        }
+        return $jy;
+    }
+
+    private function activity_start_year($experience) {
+        $year = (int) strtr((string) $experience, array_combine(
+            preg_split('//u', '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', -1, PREG_SPLIT_NO_EMPTY),
+            str_split('01234567890123456789')
+        ));
+        // Older records store a duration instead of a Solar Hijri start year.
+        return $year >= 1000 ? $year : $this->current_solar_year() - max(0, $year);
+    }
+
+    // Shift the selected estimates together, preserving distance order and bounds.
+    private function balance_arrival_times($technicians) {
+        if (!$technicians) {
+            return $technicians;
+        }
+        $times = array_column($technicians, '_fls_estimated_time');
+        $low = 25 - max($times);
+        $high = 38 - min($times);
+        for ($step = 0; $step < 50; $step++) {
+            $shift = ($low + $high) / 2;
+            $sum = 0;
+            foreach ($times as $time) {
+                $sum += max(25, min(38, $time + $shift));
+            }
+            if ($sum < 30 * count($times)) {
+                $low = $shift;
+            } else {
+                $high = $shift;
+            }
+        }
+        foreach ($technicians as &$technician) {
+            $technician['_fls_estimated_time'] = (int) round(max(25, min(38,
+                $technician['_fls_estimated_time'] + ($low + $high) / 2)));
+        }
+        unset($technician);
+        return $technicians;
     }
 
     public function plugin_deactivate() {
@@ -272,6 +339,7 @@ class FaniKara_Live_Status {
                 'lat'           => sanitize_text_field($_POST['lat']),
                 'lng'           => sanitize_text_field($_POST['lng']),
                 'satisfaction'  => intval($_POST['satisfaction']),
+                'satisfaction_count' => max(0, (int) ($_POST['satisfaction_count'] ?? 0)),
                 'experience'    => sanitize_text_field($_POST['experience']),
                 'clearance_img' => esc_url_raw($_POST['clearance_img']),
                 'profile_img'   => esc_url_raw($_POST['profile_img']),
@@ -337,8 +405,12 @@ class FaniKara_Live_Status {
                         <td><input type="number" min="0" max="100" name="satisfaction" value="<?php echo $edit_tech ? $edit_tech->satisfaction : ''; ?>" required placeholder="مثلاً: 98" class="regular-text"></td>
                     </tr>
                     <tr>
-                        <th>سابقه کار (سال)</th>
-                        <td><input type="text" name="experience" value="<?php echo $edit_tech ? esc_attr($edit_tech->experience) : ''; ?>" required placeholder="مثلاً: 8" class="regular-text"></td>
+                        <th>تعداد رضایت‌سنجی</th>
+                        <td><input type="number" min="0" step="1" name="satisfaction_count" value="<?php echo esc_attr($edit_tech->satisfaction_count ?? 0); ?>" required class="regular-text"></td>
+                    </tr>
+                    <tr>
+                        <th>سال شروع فعالیت (شمسی)</th>
+                        <td><input type="text" name="experience" value="<?php echo $edit_tech ? esc_attr($this->activity_start_year($edit_tech->experience)) : ''; ?>" required placeholder="مثلاً: 1390" inputmode="numeric" pattern="[0-9۰-۹٠-٩]{4}" class="regular-text"></td>
                     </tr>
                     <tr>
                         <th>تصویر پروفایل</th>
@@ -491,6 +563,12 @@ class FaniKara_Live_Status {
 
         $technicians = $wpdb->get_results("SELECT * FROM $tech_table", ARRAY_A);
 
+        foreach ($technicians as &$technician) {
+            $technician['activity_start_year'] = $this->activity_start_year($technician['experience']);
+            $technician['satisfaction_count'] = max(0, (int) ($technician['satisfaction_count'] ?? 0));
+        }
+        unset($technician);
+
         // تولید کارت‌های اولیه در سمت سرور برای نمایش بدون وابستگی به JavaScript
         $ranked_technicians = array();
         $user_lat = (float) $default_lat;
@@ -506,7 +584,7 @@ class FaniKara_Live_Status {
             $distance = $earth_radius * 2 * atan2(sqrt($a), sqrt(1 - $a));
 
             $technician['_fls_distance'] = $distance;
-            $technician['_fls_estimated_time'] = max(10, (int) round($distance * 3 + 25));
+            $technician['_fls_estimated_time'] = max(25, min(38, (int) round($distance * 3 + 18)));
             $ranked_technicians[] = $technician;
         }
 
@@ -542,7 +620,9 @@ class FaniKara_Live_Status {
             }
         }
 
-        wp_enqueue_script('fls-script', FLS_URL . 'fls-style-script.js', array('jquery'), '1.2.4', true);
+        $initial_technicians = $this->balance_arrival_times($initial_technicians);
+
+        wp_enqueue_script('fls-script', FLS_URL . 'fls-style-script.js', array('jquery'), '1.2.5', true);
         wp_localize_script('fls-script', 'flsData', array(
             'defaultLat' => $default_lat,
             'defaultLng' => $default_lng,
@@ -572,7 +652,7 @@ class FaniKara_Live_Status {
                         $is_featured = (int) $technician['is_featured'] === 1;
                         $profile_image = !empty($technician['profile_img']) ? $technician['profile_img'] : 'https://via.placeholder.com/60';
                         $clearance_image = !empty($technician['clearance_img']) ? $technician['clearance_img'] : 'https://via.placeholder.com/60';
-                        $location = $is_featured ? 'در حال حرکت …' : $technician['location_name'];
+                        $location = $technician['location_name'];
                     ?>
                     <div class="fls-card <?php echo $is_featured ? 'fls-card-featured' : ''; ?>">
                         <?php if ($is_featured): ?><span class="fls-badge">ویژه منطقه</span><?php endif; ?>
@@ -583,12 +663,12 @@ class FaniKara_Live_Status {
                             </div>
                             <div>
                                 <h4 class="fls-tech-name"><?php echo esc_html($technician['name']); ?></h4>
-                                <span style="font-size:12px; color:#777;">سابقه: <?php echo esc_html($technician['experience']); ?> سال</span>
+                                <span style="font-size:12px; color:#777;">سابقه فعالیت: از سال <?php echo esc_html($technician['activity_start_year']); ?></span>
                             </div>
                         </div>
                         <div class="fls-info-item">📌 <strong>محل استقرار:</strong> <?php echo esc_html($location); ?></div>
                         <div class="fls-info-item">⏱ <strong>زمان رسیدن:</strong> حدود <?php echo esc_html($technician['_fls_estimated_time']); ?> دقیقه</div>
-                        <div class="fls-info-item">⭐ <strong>رضایت مشتریان:</strong> %<?php echo esc_html($technician['satisfaction']); ?></div>
+                        <div class="fls-info-item">⭐ <strong>رضایت مشتریان:</strong> <bdi><?php echo esc_html($technician['satisfaction']); ?>%</bdi> براساس <?php echo esc_html($technician['satisfaction_count']); ?> رضایت سنجی</div>
                         <button class="fls-btn-cert fls-cert-trigger" data-img="<?php echo esc_url($clearance_image); ?>">تصویر گواهی عدم سوء پیشینه</button>
                         <a href="<?php echo esc_attr('tel:' . $technician['phone']); ?>" class="fls-btn-call">تماس مستقیم 📞</a>
                     </div>
