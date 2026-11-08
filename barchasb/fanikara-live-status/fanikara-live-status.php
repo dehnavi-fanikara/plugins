@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Fanikara Live Status
  * Description: پلاگین مدیریت موقعیت زنده فنی‌کارها و نقشه تعاملی لوله بازکنی برای ارتقای سئو و تعامل کاربر.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: Javad Absalan from FaniKara.com
  * Text Domain: fanikara-live-status
  */
@@ -58,6 +58,7 @@ class FaniKara_Live_Status {
             id bigint(20) NOT NULL AUTO_INCREMENT,
             name varchar(150) NOT NULL,
             phone varchar(50) NOT NULL,
+            ads_phone varchar(50) NOT NULL DEFAULT '',
             city varchar(100) NOT NULL,
             location_name varchar(150) NOT NULL,
             lat varchar(50) NOT NULL,
@@ -74,11 +75,11 @@ class FaniKara_Live_Status {
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_maps);
         dbDelta($sql_techs);
-        update_option('fls_db_version', '1.2.0');
+        update_option('fls_db_version', '1.3.0');
     }
 
     public function maybe_upgrade_database() {
-        if (get_option('fls_db_version') !== '1.2.0') {
+        if (get_option('fls_db_version') !== '1.3.0') {
             $this->create_db_tables();
         }
     }
@@ -334,6 +335,7 @@ class FaniKara_Live_Status {
             $data = array(
                 'name'          => sanitize_text_field($_POST['name']),
                 'phone'         => sanitize_text_field($_POST['phone']),
+                'ads_phone'     => sanitize_text_field(wp_unslash($_POST['ads_phone'] ?? '')),
                 'city'          => sanitize_text_field($_POST['city']),
                 'location_name' => sanitize_text_field($_POST['location_name']),
                 'lat'           => sanitize_text_field($_POST['lat']),
@@ -384,6 +386,13 @@ class FaniKara_Live_Status {
                     <tr>
                         <th>شماره تماس</th>
                         <td><input type="text" name="phone" value="<?php echo $edit_tech ? esc_attr($edit_tech->phone) : ''; ?>" required placeholder="مثلاً: 09123456789" class="regular-text"></td>
+                    </tr>
+                    <tr>
+                        <th>شماره تماس ادز</th>
+                        <td>
+                            <input type="text" name="ads_phone" value="<?php echo $edit_tech ? esc_attr($edit_tech->ads_phone ?? '') : ''; ?>" placeholder="مثلاً: 09123456789" class="regular-text">
+                            <p class="description">اختیاری؛ برای لینک تماس در صفحاتی که پارامتر t=a در آدرس دارند استفاده می‌شود.</p>
+                        </td>
                     </tr>
                     <tr>
                         <th>شهر</th>
@@ -456,6 +465,7 @@ class FaniKara_Live_Status {
                         <th>ID</th>
                         <th>نام</th>
                         <th>تلفن</th>
+                        <th>شماره تماس ادز</th>
                         <th>محل استقرار</th>
                         <th>شاخص؟</th>
                         <th>عملیات</th>
@@ -467,6 +477,7 @@ class FaniKara_Live_Status {
                         <td><?php echo $r->id; ?></td>
                         <td><?php echo esc_html($r->name); ?></td>
                         <td><?php echo esc_html($r->phone); ?></td>
+                        <td><?php echo esc_html($r->ads_phone ?? ''); ?></td>
                         <td><?php echo esc_html($r->location_name); ?></td>
                         <td><?php echo $r->is_featured ? 'بله' : 'خیر'; ?></td>
                         <td>
@@ -563,7 +574,13 @@ class FaniKara_Live_Status {
 
         $technicians = $wpdb->get_results("SELECT * FROM $tech_table", ARRAY_A);
 
+        $use_ads_phone = isset($_GET['t']) && is_string($_GET['t']) && wp_unslash($_GET['t']) === 'a';
+
         foreach ($technicians as &$technician) {
+            $ads_phone = trim((string) ($technician['ads_phone'] ?? ''));
+            // Resolve once so initial cards and map-driven JavaScript cards use the same CTA.
+            $technician['call_phone'] = $use_ads_phone && $ads_phone !== ''
+                ? $ads_phone : $technician['phone'];
             $technician['activity_start_year'] = $this->activity_start_year($technician['experience']);
             $technician['satisfaction_count'] = max(0, (int) ($technician['satisfaction_count'] ?? 0));
         }
@@ -622,7 +639,7 @@ class FaniKara_Live_Status {
 
         $initial_technicians = $this->balance_arrival_times($initial_technicians);
 
-        wp_enqueue_script('fls-script', FLS_URL . 'fls-style-script.js', array('jquery'), '1.2.5', true);
+        wp_enqueue_script('fls-script', FLS_URL . 'fls-style-script.js', array('jquery'), '1.3.0', true);
         wp_localize_script('fls-script', 'flsData', array(
             'defaultLat' => $default_lat,
             'defaultLng' => $default_lng,
@@ -670,7 +687,7 @@ class FaniKara_Live_Status {
                         <div class="fls-info-item">⏱ <strong>زمان رسیدن:</strong> حدود <?php echo esc_html($technician['_fls_estimated_time']); ?> دقیقه</div>
                         <div class="fls-info-item">⭐ <strong>رضایت مشتریان:</strong> <bdi><?php echo esc_html($technician['satisfaction']); ?>%</bdi> براساس <?php echo esc_html($technician['satisfaction_count']); ?> رضایت سنجی</div>
                         <button class="fls-btn-cert fls-cert-trigger" data-img="<?php echo esc_url($clearance_image); ?>">تصویر گواهی عدم سوء پیشینه</button>
-                        <a href="<?php echo esc_attr('tel:' . $technician['phone']); ?>" class="fls-btn-call">تماس مستقیم 📞</a>
+                        <a href="<?php echo esc_attr('tel:' . $technician['call_phone']); ?>" class="fls-btn-call">تماس مستقیم 📞</a>
                     </div>
                     <?php endforeach; ?>
                     <!-- کارت‌ها با JS اضافه می‌شوند -->
